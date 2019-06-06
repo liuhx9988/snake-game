@@ -39,6 +39,7 @@ class Player:
         self.head.speed(0)
         self.head.shape("square")
         self.head.color(color)
+        self.color = color
         self.head.penup()
         self.alive = True
         # self.head.goto(0,0)   # start cor
@@ -95,7 +96,7 @@ class Body: # base segment of snake
         self.seg = turtle.Turtle()
         self.seg.speed(0)
         self.seg.shape("square")
-        self.seg.color("white")
+        self.seg.color(p.color)
         self.seg.penup()
         self.seg.goto(p.head.xcor(), p.head.ycor())
 
@@ -124,7 +125,7 @@ def switch_player(count):
     switcher  = {
         1: "red",
         2: "blue",
-        3: "green",
+        3: "purple",
         4: "yellow",
         5: "orange"
     }
@@ -139,7 +140,7 @@ def down():
     clientSocket.send("down".encode('utf-8'))
 
 
-def left(self):
+def left():
     clientSocket.send("left".encode('utf-8'))
 
 
@@ -186,9 +187,19 @@ while True:
     for player in data["player"]:
         if player["alive"]:
             players[player["id"]].head.goto(player["x"],player["y"])
-            #if player["length"] > len(players[player["id"]].body):
-                #players[player["id"]].body.append(Body(players[player["id"]]))
 
+            if player["length"] > len(players[player["id"]].body):
+                players[player["id"]].body.append(Body(players[player["id"]]))
+            else:
+                temp = players[player["id"]].body.popleft().seg.reset()
+                del temp
+                players[player["id"]].body.append(Body( players[player["id"]]))
+
+        else:
+            players[player["id"]].head.reset()
+            while (len(players[player["id"]].body) != 0):
+                temp = players[player["id"]].body.popleft().seg.reset()
+                del temp
 
     #players
 

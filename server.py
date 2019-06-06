@@ -28,11 +28,11 @@ serverSocket.bind(('', serverPort))
 serverSocket.listen(1)
 
 
-def receive_message():
-    message = serverSocket.recv(1024).decode('utf-8')
-    # receive message from server, print it, close connection
-    print('From client', message)
-
+# def receive_message():
+#     message = serverSocket.recv(1024).decode('utf-8')
+#     # receive message from server, print it, close connection
+#     print('From client', message)
+#
 
 #def broadcast(message, connection):
 #    for client in clients:
@@ -47,9 +47,9 @@ def receive_message():
 # remove client if there isn't any more
 
 
-def remove(connection):
-    if connection in clients:
-        clients.remove(connection)
+# def remove(connection):
+#     if connection in clients:
+#         clients.remove(connection)
 
 
 
@@ -77,7 +77,7 @@ def switch_player(count):
 
 # accept up to two connections from clients, which
 # must connect before we can move on
-for i in range(0, MAX_CLIENTS):
+for i in range( 0, MAX_CLIENTS ):
 
     connectionSocket, addr = serverSocket.accept()
 
@@ -93,7 +93,7 @@ class Player:
     # player head
     def __init__(self, color, id):
         self.id = id
-        self.length = 20
+        self.length = 10
         self.direction = "up"
         self.color = color
         self.alive = True
@@ -188,29 +188,27 @@ while True:
             p.body.append(Body(p))
         elif p.length == len(p.body)and p.alive:
 
-            temp = p.body.popleft().update()
-            #del temp
+            temp = p.body.popleft()
+            del temp
             #p.body.append(Body(p))
-            p.body.append(temp)
-
-            # temp = p.body.popleft().seg.goto(p.body.head.xcor(), p.body.head.ycor())
-            # p.body.append(temp)
-            # cannot move body?
-
+            p.body.append(p)
         p.move()
 
-    # for p in players:
-    #     for p2 in players:
-    #         for seg in p2.body:
-    #             if p.x == seg.x and p.y == seg.y:  # die
-    #
-    #                 playercount -= 1
-    #
-    #                 p.direction = "stop"
-    #                 p.alive = False
-    #                 while(len(p.body) != 0):
-    #                     temp = p.body.popleft()
-    #                     del temp
+
+    for p in players:
+        for p2 in players:
+            for seg in p2.body:
+                if p.x == seg.x and p.y == seg.y:  # die
+                    print("die",p.id,"seg:",seg.x)
+                    playercount -= 1
+
+                    p.direction = "stop"
+                    p.alive = False
+                    #while(len(p.body) != 0):
+                     #   p.body.popleft()
+
+    #for p in players:
+        #p.body.append(p)
 # send update to client
     temp = []
     for p in players:
@@ -222,7 +220,7 @@ while True:
     message = json.dumps({"player": temp,
                           "food": {"x": food.x*20,
                                    "y": food.y*20}})
-    print(message)
+    #print(message)
     for i in range(0, MAX_CLIENTS):
         clients[i][0].send(message.encode('utf-8'))
         try:
