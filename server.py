@@ -1,6 +1,10 @@
 from socket import *
 from _thread import *
 import random
+import time
+import json
+
+import socketserver
 import sys
 from collections import deque
 
@@ -10,9 +14,14 @@ HEIGHT = 1000
 REAL_WIDTH = WIDTH/20
 REAL_HEIGHT = HEIGHT/20
 DELAY = 0.1  # speed of the game
+MAX_CLIENTS = 1
 
+# Global scope
+playercount = 0
+players = []
+clients = []
 # setup socket to wait for connections
-serverPort = 43500
+serverPort = 43501
 serverSocket = socket(AF_INET, SOCK_STREAM)  # TCP (reliable)
 serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1) # make port reusable
 serverSocket.bind(('', serverPort))
@@ -25,47 +34,68 @@ def receive_message():
     print('From client', message)
 
 
-
-def broadcast(message, connection):
-    for client in clients:
-        if client[0] != connection:
-            try:
-                client[0].send(message).encode('utf-8')
-            except:
-                client[0].close()
+#def broadcast(message, connection):
+#    for client in clients:
+#        if client[0] != connection:
+#            try:
+#                client[0].send(message).encode('utf-8')
+#            except:
+#                client[0].close()
 
                 # if the link is broken, we remove the client
-                remove(clients)
-#remove client if there isn't any more
+#                remove(clients)
+# remove client if there isn't any more
+
+
 def remove(connection):
     if connection in clients:
         clients.remove(connection)
 
-def on_new_client(connection,addr):
-    while True:
-        msg = connection.recv(1024).decode('utf-8')
-        broadcast(msg, connection)
+
+
+def switch_player(count):
+    count = {
+        1: "red",
+        2: "blue",
+        3: "green",
+        4: "yellow",
+        5: "orange",
+    }
+#def on_new_client(connection,addr):
+#    global playercount
+#    playercount = playercount +1
+#    players.append(Player(switch_player(playercount), playercount-1))
+
+#    while True:
+ #       msg = connection.recv(1024).decode('utf-8')
+
+ #       broadcast(msg, connection)
 
 
 
-clients = []
 
-#accept up to two connections from clients, which
+
+# accept up to two connections from clients, which
 # must connect before we can move on
 for i in range(0, MAX_CLIENTS):
+
     connectionSocket, addr = serverSocket.accept()
+
     clients.append((connectionSocket,addr))
     print (addr[0] +':'+str(addr[1]) + " connected" )
-    start_new_thread(on_new_client,(connectionSocket,addr))
+
+    connectionSocket.setblocking(0)
+    #start_new_thread(on_new_client,(connectionSocket,addr))
 
 
 # game
 class Player:
     # player head
-    def __init__(self, color):
+    def __init__(self, color, id):
+        self.id = id
         self.length = 20
-        self.direction = "stop"
-        self.color(color)
+        self.direction = "up"
+        self.color = color
         self.alive = True
         # self.head.goto(0,0)   # start cor
         self.x = random.randint(1-REAL_WIDTH/2, REAL_WIDTH/2-1)
@@ -115,8 +145,8 @@ class Player:
 class Body:  # base segment of snake
     def __init__(self, p):
         self.body = p
-        self.x
-        self.y
+        self.x = p.x
+        self.y = p.y
 
     def update(self):
         self.x = self.body.x
@@ -126,36 +156,42 @@ class Body:  # base segment of snake
 class Food:
     def __init__(self):
         self.x = 0
-        self.y = 200  # start cor
+        self.y = 20  # start cor
 
     def move(self):
         self.x = random.randint(1-REAL_WIDTH/2, REAL_WIDTH/2-1)
         self.y = random.randint(1-REAL_HEIGHT/2, REAL_HEIGHT/2-1)
 
-player1 = Player("red")
-player2 = Player("blue")
-# player3 = Player("green")
+
+player1 = Player("red", 0)
+player2 = Player("blue", 1)
+#player3 = Player("green",2)
 playercount = 2
-players= [player1, player2]  # ,player3]
+players = [player1, player2]  # ,player3]
 food = Food()
 
-
+print("server start")
+message = json.dumps({"playercount": playercount})
+print(message)
+for i in range(0, MAX_CLIENTS):
+    clients[i][0].send(message.encode('utf-8'))
 
 # main loop
 while True:
     for p in players:
-        if p.head.xcor() == food.food.xcor()and p.head.ycor() == food.food.ycor():
+        if p.x == food.x and p.y == food.y:
             p.eat()
             p.body.append(Body(p))
             food.move()
     for p in players:
-        if p.length> len(p.body) and p.direction != "stop"and p.alive:
+        if p.length > len(p.body) and p.direction != "stop"and p.alive:
             p.body.append(Body(p))
         elif p.length == len(p.body)and p.alive:
 
-            temp = p.body.popleft().seg.reset()
-            del temp
-            p.body.append(Body(p))
+            temp = p.body.popleft().update()
+            #del temp
+            #p.body.append(Body(p))
+            p.body.append(temp)
 
             # temp = p.body.popleft().seg.goto(p.body.head.xcor(), p.body.head.ycor())
             # p.body.append(temp)
@@ -163,20 +199,48 @@ while True:
 
         p.move()
 
+    # for p in players:
+    #     for p2 in players:
+    #         for seg in p2.body:
+    #             if p.x == seg.x and p.y == seg.y:  # die
+    #
+    #                 playercount -= 1
+    #
+    #                 p.direction = "stop"
+    #                 p.alive = False
+    #                 while(len(p.body) != 0):
+    #                     temp = p.body.popleft()
+    #                     del temp
+# send update to client
+    temp = []
     for p in players:
-        for p2 in players:
-            for seg in p2.body:
-                if p.head.xcor() == seg.seg.xcor()and p.head.ycor() == seg.seg.ycor():  # die
-
-                    playercount -= 1
-
-                    p.direction = "stop"
-                    p.alive = False
-                    p.head.reset()
-                    while(len(p.body) != 0):
-                        temp = p.body.popleft().seg.reset()
-                        del temp
-
+        temp.append({"id": p.id,
+                              "alive": p.alive,
+                              "x":p.x*20,
+                              "y":p.y*20,
+                              "length":p.length})
+    message = json.dumps({"player": temp,
+                          "food": {"x": food.x*20,
+                                   "y": food.y*20}})
+    print(message)
+    for i in range(0, MAX_CLIENTS):
+        clients[i][0].send(message.encode('utf-8'))
+        try:
+            message = clients[i][0].recv(1024).decode('utf-8')
+            if players[i].alive and message:
+                print(message)
+                if message == "up":
+                    players[i].up()
+                elif message == "down":
+                    players[i].down()
+                elif message == "left":
+                    players[i].left()
+                elif message == "right":
+                    players[i].right()
+        except Exception:
+            pass
     # text = turtle.write("playercount : " + str(playercount), move=False, align="left", font=("Arial", 8, "normal"), color = "white")
 
     time.sleep(DELAY)
+
+
