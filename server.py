@@ -1,21 +1,19 @@
 from socket import *
-from _thread import *
 import random
 import time
 import json
-
-import socketserver
-import sys
 from collections import deque
 
 # constant
 WIDTH = 1000
 HEIGHT = 1000
+DELAY = 0.1  # speed of the game
+MAX_CLIENTS = 2
+MAX_LENGTH = 100 #length to win
+
+
 REAL_WIDTH = WIDTH/20
 REAL_HEIGHT = HEIGHT/20
-DELAY = 0.1  # speed of the game
-MAX_CLIENTS = 1
-
 # Global scope
 playercount = 0
 players = []
@@ -26,52 +24,6 @@ serverSocket = socket(AF_INET, SOCK_STREAM)  # TCP (reliable)
 serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1) # make port reusable
 serverSocket.bind(('', serverPort))
 serverSocket.listen(1)
-
-
-# def receive_message():
-#     message = serverSocket.recv(1024).decode('utf-8')
-#     # receive message from server, print it, close connection
-#     print('From client', message)
-#
-
-#def broadcast(message, connection):
-#    for client in clients:
-#        if client[0] != connection:
-#            try:
-#                client[0].send(message).encode('utf-8')
-#            except:
-#                client[0].close()
-
-                # if the link is broken, we remove the client
-#                remove(clients)
-# remove client if there isn't any more
-
-
-# def remove(connection):
-#     if connection in clients:
-#         clients.remove(connection)
-
-
-
-def switch_player(count):
-    count = {
-        1: "red",
-        2: "blue",
-        3: "green",
-        4: "yellow",
-        5: "orange",
-    }
-#def on_new_client(connection,addr):
-#    global playercount
-#    playercount = playercount +1
-#    players.append(Player(switch_player(playercount), playercount-1))
-
-#    while True:
- #       msg = connection.recv(1024).decode('utf-8')
-
- #       broadcast(msg, connection)
-
-
 
 
 
@@ -85,17 +37,16 @@ for i in range( 0, MAX_CLIENTS ):
     print (addr[0] +':'+str(addr[1]) + " connected" )
 
     connectionSocket.setblocking(0)
-    #start_new_thread(on_new_client,(connectionSocket,addr))
+
 
 
 # game
 class Player:
     # player head
-    def __init__(self, color, id):
+    def __init__(self, id):
         self.id = id
         self.length = 10
         self.direction = "up"
-        self.color = color
         self.alive = True
         # self.head.goto(0,0)   # start cor
         self.x = random.randint(1-REAL_WIDTH/2, REAL_WIDTH/2-1)
@@ -166,18 +117,17 @@ class Food:
         self.y = random.randint(1-REAL_HEIGHT/2, REAL_HEIGHT/2-1)
 
 
-player1 = Player("red", 0)
-player2 = Player("blue", 1)
-#player3 = Player("green",2)
-playercount = 2
-players = [player1, player2]  # ,player3]
-food = Food()
 
+food = Food()
+for i in range(0, MAX_CLIENTS):
+    players.append(Player(i))
+    playercount += 1
 print("server start")
 message = json.dumps({"playercount": playercount})
 print(message)
 for i in range(0, MAX_CLIENTS):
     clients[i][0].send(message.encode('utf-8'))
+
 winner = -1
 Not_end = True
 # main loop
@@ -186,7 +136,7 @@ while Not_end:
         if p.x == food.x and p.y == food.y:
             p.eat()
             p.body.append(Body(p))
-            if p.length > 100:
+            if p.length > MAX_LENGTH:
                 winner= p.id
 
             food.move()

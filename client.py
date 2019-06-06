@@ -25,10 +25,6 @@ game.title("Sanke Game")
 game.setup(width=WIDTH, height=HEIGHT)
 
 
-def send_data(dir):
-    data = str(dir)
-    clientSocket.send(data.encode('utf-8'))
-
 
 class Player:
     # player head
@@ -129,7 +125,7 @@ def switch_player(count):
         4: "yellow",
         5: "orange"
     }
-    return switcher.get(count, "nothing")
+    return switcher.get(count, (random.random(),random.random(),random.random()))
 
 
 def up():
@@ -147,11 +143,7 @@ def left():
 def right():
     clientSocket.send("right".encode('utf-8'))
 
-#player1 = Player("red")
-#player2 = Player("blue")
-# player3 = Player("green")
-playercount = 2
-#players= [player1, player2]  # ,player3]
+
 food = Food()
 
 game.listen()
@@ -160,10 +152,6 @@ game.onkey(down, "s")
 game.onkey(left, "a")
 game.onkey(right, "d")
 
-#game.onkey(player2.up, "Up")
-#game.onkey(player2.down, "Down")
-#game.onkey(player2.left, "Left")
-#game.onkey(player2.right, "Right")
 serverName = 'localhost'
 serverPort = 43501
 clientSocket = socket(AF_INET, SOCK_STREAM)  # TCP socket
