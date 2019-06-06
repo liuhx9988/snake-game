@@ -195,12 +195,24 @@ while True:
                 del temp
                 players[player["id"]].body.append(Body( players[player["id"]]))
 
+#switch_player(x+1)
         else:
             players[player["id"]].head.reset()
             while (len(players[player["id"]].body) != 0):
                 temp = players[player["id"]].body.popleft().seg.reset()
                 del temp
-
+    if data["win"] != -1:
+        print("WIN")
+        win_text = turtle.Turtle()
+        win_text.color("deep pink")
+        text = "Player "+switch_player(data["win"]+1)+" WIN!"
+        #text = "player"
+        win_text.write(text, move=False, align="left", font=("Arial", 50, "normal"))
+        win_text.shape("square")
+        win_text.speed(0)
+        win_text.penup()
+        win_text.goto(-800,0)
+        win_text.hideturtle()
     #players
 
     #time.sleep(DELAY)
@@ -214,3 +226,6 @@ while True:
             del temp
             p.body.append(Body(p))
 game.mainloop()
+
+
+time.sleep(20)

@@ -147,7 +147,10 @@ class Body:  # base segment of snake
         self.body = p
         self.x = p.x
         self.y = p.y
-
+        #p.move()
+        # for p2 in players:
+        #     if p2.x == self.x and p2.y == self.y:
+        #         print("die?")
     def update(self):
         self.x = self.body.x
         self.y = self.body.y
@@ -175,13 +178,17 @@ message = json.dumps({"playercount": playercount})
 print(message)
 for i in range(0, MAX_CLIENTS):
     clients[i][0].send(message.encode('utf-8'))
-
+winner = -1
+Not_end = True
 # main loop
-while True:
+while Not_end:
     for p in players:
         if p.x == food.x and p.y == food.y:
             p.eat()
             p.body.append(Body(p))
+            if p.length > 100:
+                winner= p.id
+
             food.move()
     for p in players:
         if p.length > len(p.body) and p.direction != "stop"and p.alive:
@@ -191,7 +198,7 @@ while True:
             temp = p.body.popleft()
             del temp
             #p.body.append(Body(p))
-            p.body.append(p)
+            p.body.append(Body(p))
         p.move()
 
 
@@ -199,14 +206,19 @@ while True:
         for p2 in players:
             for seg in p2.body:
                 if p.x == seg.x and p.y == seg.y:  # die
-                    print("die",p.id,"seg:",seg.x)
+                    #print("die",p.id,"seg:",seg.x)
                     playercount -= 1
 
                     p.direction = "stop"
                     p.alive = False
-                    #while(len(p.body) != 0):
-                     #   p.body.popleft()
-
+                    while(len(p.body) != 0):
+                       p.body.popleft()
+        if playercount == 1:
+            p.direction = "stop"
+            Not_end = False
+            for p in players:
+                if p.alive:
+                    winner = p.id
     #for p in players:
         #p.body.append(p)
 # send update to client
@@ -219,7 +231,9 @@ while True:
                               "length":p.length})
     message = json.dumps({"player": temp,
                           "food": {"x": food.x*20,
-                                   "y": food.y*20}})
+                                   "y": food.y*20},
+                          "alive": playercount,
+                          "win":winner})
     #print(message)
     for i in range(0, MAX_CLIENTS):
         clients[i][0].send(message.encode('utf-8'))
@@ -241,4 +255,4 @@ while True:
 
     time.sleep(DELAY)
 
-
+time.sleep(20)
